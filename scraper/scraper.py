@@ -1,89 +1,51 @@
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import TimeoutException
+from .models import Produto
+from bs4 import BeautifulSoup
+
 import time
-import undetected_chromedriver as uc
 
-# Configuração do Chrome em modo headless (sem interface gráfica)
-chrome_options = Options()
-chrome_options.add_argument("--headless")  
-chrome_options.add_argument("--disable-gpu")  
-chrome_options.add_argument("--no-sandbox")  
-chrome_options.add_argument("--disable-dev-shm-usage")  
+def coletar_produtos():
+    # Configura o WebDriver do Selenium
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Roda em segundo plano, sem abrir o navegador
+    service = Service("./scraper/chromedriver-win64/chromedriver.exe")
+    driver = webdriver.Chrome(service=service, options=chrome_options)
 
-# Inicializando o driver com undetected_chromedriver
-service = Service(ChromeDriverManager().install())
-driver = uc.Chrome(service=service, options=chrome_options)
+    # Acesse a página
+    driver.get("https://mercadolivre.com.br")
 
-URL = "https://www.mercadolivre.com.br/ofertas#nav-header"
 
-def buscar_produtos():
-    driver.get(URL)
+    # Aguarde a página carregar (ajuste o tempo se necessário)
+    time.sleep(5)  # Aumente se necessário para a página carregar
 
-    try:
-        # Aguardar um elemento chave para garantir que a página carregou (mude o XPATH conforme necessário)
-        WebDriverWait(driver, 90).until(
-            EC.presence_of_element_located((By.XPATH, '//h1[contains(text(), "Ofertas")]'))
-        )
-    except TimeoutException as e:
-        print(f"Erro de timeout ao carregar a página: {e}")
-        return []
-    except Exception as e:
-        print(f"Erro ao carregar a página: {e}")
-        return []
+    # Extraia o HTML da página após o carregamento do JavaScript
+    html = driver.page_source
+    driver.quit()
 
-    # Rolar até o final da página para garantir que o conteúdo seja carregado
-    for i in range(3):  # Rolar 3 vezes
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(3)  # Aguarda 3 segundos após rolar
+    # Analise o HTML com BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
 
-    # Verificar o código-fonte da página para depurar
-    page_source = driver.page_source
-    print(page_source)  # Imprime o código-fonte da página para análise
-
+    # Exemplo de como buscar produtos com Selenium/BeautifulSoup
     produtos = []
+    for item in soup.find_all("li", class_="ui-search-layout__item"):  # Verifique a classe correta
+        nome = item.find("h2", class_="ui-search-item__title")
+        preco = item.find("span", class_="price")
+        link = item.find("a", class_="ui-search-link")
 
-    # Ajuste o XPATH caso necessário (verifique o conteúdo real da página)
-    itens = driver.find_elements(By.XPATH, '//li[contains(@class, "promotion-item")]')
-    if not itens:
-        print("Nenhum item encontrado com o XPATH fornecido.")
-    else:
-        print(f"Itens encontrados: {len(itens)}")
-
-    for item in itens[:10]:  # Limitar a 10 produtos
-        try:
-            nome = item.find_element(By.XPATH, './/p[@class="promotion-item__title"]').text
-            preco = item.find_element(By.XPATH, './/span[@class="andes-money-amount__fraction"]').text
-            link = item.find_element(By.XPATH, './/a').get_attribute("href")
-
-            produto = {
-                "nome": nome,
-                "preco": preco,
-                "link": link
-            }
+        if nome and preco and link:
+            produto = Produto(
+                nome=nome.text.strip(),
+                preco=preco.text.strip(),
+                link=link.get("href")
+            )
             produtos.append(produto)
-        except Exception as e:
-            print(f"Erro ao processar produto: {e}")
 
+    # Salva os produtos no banco de dados
+    Produto.objects.bulk_create(produtos)
+
+    if not produtos:
+        print("Nenhum produto encontrado.")
     return produtos
-
-if __name__ == "__main__":
-    try:
-        resultados = buscar_produtos()
-
-        if resultados:
-            for produto in resultados:
-                print(produto)
-        else:
-            print("Nenhum produto encontrado.")
-
-    finally:
-        try:
-            driver.quit()  # Garante que o driver será fechado corretamente
-        except Exception as e:
-            print(f"Erro ao fechar o driver: {e}")

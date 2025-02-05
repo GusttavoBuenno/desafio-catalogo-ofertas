@@ -1,27 +1,45 @@
+<!-- scraper/templates/scraper/lista_produtos.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Produtos</title>
 </head>
 <body>
-    <h1>Produtos Atualizados</h1>
+    <h1>Produtos</h1>
+    <form method="GET" action="">
+        <label>
+            <input type="checkbox" name="frete_gratis" {% if request.GET.frete_gratis %}checked{% endif %}> Frete Grátis
+        </label>
+        <label>
+            <input type="checkbox" name="entrega_full" {% if request.GET.entrega_full %}checked{% endif %}> Entrega Full
+        </label>
+        <button type="submit">Filtrar</button>
+    </form>
 
-    {% if produtos %}
-        <div class="produtos-list">
-            {% for produto in produtos %}
-                <div class="produto">
-                    <img src="{{ produto.imagem }}" alt="{{ produto.nome }}" width="150">
-                    <h2>{{ produto.nome }}</h2>
-                    <p><strong>Preço:</strong> R$ {{ produto.preco }}</p>
-                    <p><strong>Desconto:</strong> {{ produto.desconto }}%</p>
-                    <a href="{{ produto.link }}" target="_blank">Ver no Mercado Livre</a>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p>Nenhum produto encontrado.</p>
-    {% endif %}
+    <ul>
+        {% for produto in produtos %}
+            <li>
+                <img src="{{ produto.imagem_url }}" alt="{{ produto.nome }}" width="100"><br>
+                <strong>{{ produto.nome }}</strong><br>
+                Preço: {{ produto.preco }}<br>
+                Link: <a href="{{ produto.link }}" target="_blank">Ver Produto</a><br>
+                {% if produto.preco_sem_desconto %}
+                    Preço sem Desconto: {{ produto.preco_sem_desconto }}<br>
+                {% endif %}
+                {% if produto.percentual_desconto %}
+                    Desconto: {{ produto.percentual_desconto }}%<br>
+                {% endif %}
+                Tipo de Entrega: {{ produto.tipo_entrega }}<br>
+                {% if produto.frete_gratis %}
+                    Frete Grátis: Sim<br>
+                {% endif %}
+            </li>
+        {% empty %}
+            <p>Nenhum produto encontrado.</p>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url 'atualizar_produtos' %}">Atualizar Produtos</a>
 </body>
 </html>

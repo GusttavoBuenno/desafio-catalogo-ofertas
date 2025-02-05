@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtos Atualizados</title>
+</head>
+<body>
+    <h1>Produtos Atualizados</h1>
+    <ul>
+        {% for produto in produtos %}
+            <li>
+                <a href="{{ produto.link }}">{{ produto.nome }}</a><br>
+                Preço: {{ produto.preco }}<br>
+                Desconto: {{ produto.desconto }}<br>
+            </li>
+        {% empty %}
+            <p>Nenhum produto encontrado.</p>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'lista_produtos' %}">Voltar à Lista de Produtos</a>
+</body>
+</html>
