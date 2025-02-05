@@ -15,3 +15,6 @@ class Produto(models.Model):
 
     def __str__(self):
         return self.nome
+
+    class Meta:
+        db_table = 'catalogo_produto'  # Garantindo que a tabela tenha um nome único

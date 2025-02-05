@@ -3,18 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Produtos</title>
+    <title>Produtos</title>
 </head>
 <body>
-    <h1>Ofertas do Mercado Livre</h1>
-    <ul>
-        {% for produto in produtos %}
-            <li>
-                <strong>{{ produto.nome }}</strong><br>
-                Preço: R$ {{ produto.preco }}<br>
-                <a href="{{ produto.link }}" target="_blank">Ver Oferta</a>
-            </li>
-        {% endfor %}
-    </ul>
+    <h1>Produtos</h1>
+
+    <!-- Filtros -->
+    <div>
+        <label for="preco_min">Preço mínimo:</label>
+        <input type="number" id="preco_min">
+        
+        <label for="preco_max">Preço máximo:</label>
+        <input type="number" id="preco_max">
+        
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome">
+        
+        <button onclick="atualizarProdutos()">Filtrar</button>
+    </div>
+
+    <!-- Tabela de produtos -->
+    <table id="produtos">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Preço</th>
+                <th>Link</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Produtos serão carregados aqui -->
+        </tbody>
+    </table>
+
+    <script>
+        // Função para atualizar a lista de produtos
+        function atualizarProdutos() {
+            const preco_min = document.getElementById('preco_min').value;
+            const preco_max = document.getElementById('preco_max').value;
+            const nome = document.getElementById('nome').value;
+
+            // Montando a URL da API com os filtros
+            let url = '/api/produtos/?';
+            if (preco_min) url += `preco_min=${preco_min}&`;
+            if (preco_max) url += `preco_max=${preco_max}&`;
+            if (nome) url += `nome=${nome}&`;
+
+            // Remover o último "&"
+            url = url.slice(0, -1);
+
+            // Requisição Fetch para consumir a API
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let tbody = document.querySelector('#produtos tbody');
+                    tbody.innerHTML = '';  // Limpa a tabela antes de adicionar os novos dados
+
+                    // Iterando pelos produtos e exibindo-os na tabela
+                    data.forEach(function(produto) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${produto.nome}</td>
+                            <td>${produto.preco}</td>
+                            <td><a href="${produto.link}" target="_blank">Ver Produto</a></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar os produtos:', error));
+        }
+
+        // Carregar os produtos ao inicializar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            atualizarProdutos();
+        });
+    </script>
 </body>
 </html>
